@@ -26,15 +26,15 @@ body {
 }
 
 .papercard {
-  width: 40%;
+  width: 80%;
   box-sizing: border-box;
   padding: 35px 35px 25px 35px;
-  max-width: 600px;
-  min-width: 300px;
+  max-width: 900px;
+  min-width: 400px;
   max-height: 100vh;
   align-self: center;
   justify-self: center;
-  height: 300px;
+  height: 500px;
   min-height: 100px;
   background-color: #ffffff;
   margin: 0;

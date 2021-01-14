@@ -1,0 +1,22 @@
+{
+  "name": "wysiwig-task",
+  "version": "1.0.0",
+  "description": "## Задача",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/burya4ok/wysiwig-task.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/burya4ok/wysiwig-task/issues"
+  },
+  "homepage": "https://github.com/burya4ok/wysiwig-task#readme",
+  "devDependencies": {
+    "eslint": "^7.17.0"
+  }
+}

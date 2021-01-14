@@ -7,21 +7,23 @@
     <link rel="stylesheet" href="./styles/page.css" />
   </head>
   <body>
+    <script src="./js/editor.js"></script>
+
     <div class="container">
       <main class="papercard">
         <div class="editor">
-          <div class="edit-area" placeholder="Type something..."></div>
+          <div class="edit-area" id="edit-area" placeholder="Type something..." contenteditable="true"></div>
           <div class="toolkit">
-            <button class="head-1">
+            <button id="head-1" class="head-1">
               <img src="assets/icons_h1.svg" alt="Head 1 button icon" />
             </button>
-            <button class="head-2">
+            <button id="head-2" class="head-2">
               <img src="assets/icons_h2.svg" alt="Head 2 button icon" />
             </button>
-            <button class="bold">
+            <button id="bold" class="bold">
               <img src="assets/icons_bold.svg" alt="Bold button icon" />
             </button>
-            <button class="italic">
+            <button id="italic" class="italic">
               <img src="assets/icons_italic.svg" alt="Italic button icon" />
             </button>
           </div>
@@ -30,9 +32,7 @@
       <footer>
         <p class="authority">
           <b>Disgned</b> by
-          <a href="https://dribbble.com/yaroslavsamoilov" target="_blank"
-            >Yaroslav Samoilov</a
-          >
+          <a href="https://dribbble.com/yaroslavsamoilov" target="_blank">Yaroslav Samoilov</a>
         </p>
       </footer>
     </div>
