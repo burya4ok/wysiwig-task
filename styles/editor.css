@@ -5,9 +5,9 @@
   grid-template-columns: 100%;
   grid-template-rows: 85% 5% 10%;
   grid-template-areas:
-    "textarea"
-    ".."
-    "toolkit";
+    'textarea'
+    '..'
+    'toolkit';
 }
 
 .editor .edit-area {
@@ -15,7 +15,7 @@
   grid-area: textarea;
   max-height: 100%;
   overflow-y: scroll;
-  padding: .5rem;
+  padding: 0.5rem;
 }
 
 .editor .edit-area:empty::before {
@@ -25,7 +25,7 @@
 }
 
 .editor .edit-area:empty:focus::before {
-  content: "";
+  content: '';
 }
 
 .editor .edit-area .bold-text {
@@ -37,18 +37,22 @@
 }
 
 .editor .edit-area .header1-text {
-  font-size: 1.5rem;
-  line-height: 2.5rem;
+  font-size: 18pt;
+  line-height: 30pt;
   font-weight: 500;
   display: block;
+  margin-block-start: 0;
+  margin-block-end: 0;
 }
 
 .editor .edit-area .header2-text {
-  font-size: 1.2rem;
-  line-height: 2.5rem;
+  font-size: 14.5pt;
+  line-height: 30pt;
   font-weight: 500;
   display: block;
   margin: 0;
+  margin-block-start: 0;
+  margin-block-end: 0;
 }
 
 .editor .toolkit {

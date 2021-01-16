@@ -152,7 +152,7 @@ const replaceSelection = async (container, action, selection, containers) => {
 
   if (
     range.commonAncestorContainer &&
-    ['span'].some((listType) => listType === range.commonAncestorContainer.nodeName.toLowerCase())
+    ['span', 'h1', 'h2'].some((listType) => listType === range.commonAncestorContainer.nodeName.toLowerCase())
   ) {
     await updateSelection(range.commonAncestorContainer, action, containers)
     return
@@ -160,23 +160,23 @@ const replaceSelection = async (container, action, selection, containers) => {
 
   const fragment = range.extractContents()
 
-  const span = await createSpan(container, action, containers)
-  span.appendChild(fragment)
+  const el = await createElement(container, action, containers)
+  el.appendChild(fragment)
 
-  await cleanChildren(action, span)
-  await flattenChildren(action, span)
+  await cleanChildren(action, el)
+  await flattenChildren(action, el)
 
-  range.insertNode(span)
-  selection.selectAllChildren(span)
+  range.insertNode(el)
+  selection.selectAllChildren(el)
 }
 
-const cleanChildren = async (action, span) => {
-  if (!span.hasChildNodes()) {
+const cleanChildren = async (action, el) => {
+  if (!el.hasChildNodes()) {
     return
   }
 
   // Clean direct (> *) children with same style
-  const children = Array.from(span.children).filter((element) => {
+  const children = Array.from(el.children).filter((element) => {
     return element.className.includes(action.className)
   })
 
@@ -191,7 +191,7 @@ const cleanChildren = async (action, span) => {
   }
 
   // Direct children (> *) may have children (*) which need to be cleaned too
-  const cleanChildrenChildren = Array.from(span.children).map((element) => {
+  const cleanChildrenChildren = Array.from(el.children).map((element) => {
     return cleanChildren(action, element)
   })
 
@@ -202,21 +202,33 @@ const cleanChildren = async (action, span) => {
   await Promise.all(cleanChildrenChildren)
 }
 
-const createSpan = async (container, action) => {
-  const span = document.createElement('span')
-  span.className = action.className
+const createElement = async (container, action) => {
+  let element = 'span'
 
-  return span
+  switch (action.className) {
+    case 'header1-text': {
+      element = 'h1'
+      break
+    }
+    case 'header2-text': {
+      element = 'h2'
+      break
+    }
+  }
+  const el = document.createElement(element)
+  el.className = action.className
+
+  return el
 }
 
-// We try to not keep <span/> in the tree if we can use text
-const flattenChildren = async (action, span) => {
-  if (!span.hasChildNodes()) {
+// We try to not keep <el/> in the tree if we can use text
+const flattenChildren = async (action, el) => {
+  if (!el.hasChildNodes()) {
     return
   }
 
   // Flatten direct (> *) children with no style
-  const children = Array.from(span.children).filter((element) => {
+  const children = Array.from(el.children).filter((element) => {
     const className = element.getAttribute('className') || element.className
     return !className || className === ''
   })
@@ -235,7 +247,7 @@ const flattenChildren = async (action, span) => {
   }
 
   // Direct children (> *) may have children (*) which need to be flattened too
-  const flattenChildrenChildren = Array.from(span.children).map((element) => {
+  const flattenChildrenChildren = Array.from(el.children).map((element) => {
     return flattenChildren(action, element)
   })
 
