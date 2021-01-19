@@ -1,6 +1,9 @@
+html {
+  font-size: 16px;
+}
+
 body {
-  font-family: "Haas Grot Text R Web", "Helvetica Neue", Helvetica, Arial,
-    sans-serif;
+  font-family: 'Haas Grot Text R Web', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   display: grid;
   width: 100%;
   height: 100vh;
@@ -20,9 +23,9 @@ body {
   grid-template-columns: 100%;
   grid-template-rows: 10% 80% 10%;
   grid-template-areas:
-    "header"
-    "content"
-    "footer";
+    'header'
+    'content'
+    'footer';
 }
 
 .papercard {

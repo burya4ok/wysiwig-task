@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
+  const defaultFontSize = +window.getComputedStyle(document.documentElement).fontSize.replace('px', '')
+
   const editArea = document.getElementById('edit-area')
 
   const header1Button = document.getElementById('head-1')
@@ -6,76 +8,89 @@ document.addEventListener('DOMContentLoaded', () => {
   const boldButton = document.getElementById('bold')
   const italicButton = document.getElementById('italic')
 
+  const header1ClassName = 'header1-text'
+  const header2ClassName = 'header2-text'
+  const boldClassName = 'header2-text'
+  const italicClassName = 'header2-text'
+
+  const cssRulesForHeaders = Array.from(document.styleSheets)
+    .reduce((rules, styleSheet) => rules.concat(Array.from(styleSheet.cssRules)), [])
+    .filter((rule) => rule.selectorText.includes(header1ClassName) || rule.selectorText.includes(header2ClassName))
+
+  const copyHandler = (isCut = false) => (event) => {
+    const selection = document.getSelection()
+    const selectionContent = selection.getRangeAt(0).cloneContents()
+
+    const convertNodeStyles = (node) => {
+      if (node.nodeType !== 3) {
+        if (node.className) {
+          convertStylesToInline(node, node.className.toLowerCase())
+        }
+
+        if (node.childNodes) {
+          for (let i = 0; i < node.childNodes.length; i++) {
+            convertNodeStyles(node.childNodes[i])
+          }
+        }
+      }
+      return node
+    }
+
+    const convertedChildren = Array.from(selectionContent.childNodes).map(convertNodeStyles)
+
+    const wrap = document.createElement('div')
+
+    wrap.append(...convertedChildren)
+
+    event.clipboardData.setData('text/html', wrap.innerHTML)
+
+    if (isCut) {
+      selection.deleteFromDocument()
+    }
+
+    event.preventDefault()
+  }
+
+  const convertStylesToInline = (node, className) => {
+    const cssRule = cssRulesForHeaders.find((r) => r.selectorText.includes(className))
+    if (cssRule) {
+      Array.from(cssRule.style).forEach((styleName) => {
+        let value = cssRule.style[styleName]
+
+        if (value.includes('rem')) {
+          const relativeValue = parseFloat(value)
+          value = relativeValue * defaultFontSize + 'px'
+        }
+        node.style[styleName] = value
+      })
+    }
+  }
+
+  editArea.addEventListener('copy', copyHandler())
+  editArea.addEventListener('cut', copyHandler(true))
+
   const header1ButtonHanlder = async () => {
     editArea.focus()
 
-    execCommandWithAction(await getSelection(), { className: 'header1-text', isHeader: true })
+    execCommandWithAction(await getSelection(), { className: header1ClassName, isHeader: true })
   }
 
   const header2ButtonHanlder = async () => {
     editArea.focus()
 
-    execCommandWithAction(await getSelection(), { className: 'header2-text', isHeader: true })
+    execCommandWithAction(await getSelection(), { className: header2ClassName, isHeader: true })
   }
 
   const boldButtonHanlder = async () => {
     editArea.focus()
 
-    execCommandWithAction(await getSelection(), { className: 'bold-text' })
+    execCommandWithAction(await getSelection(), { className: boldClassName })
   }
   const italicButtonHanlder = async () => {
     editArea.focus()
 
-    execCommandWithAction(await getSelection(), { className: 'italic-text' })
+    execCommandWithAction(await getSelection(), { className: italicClassName })
   }
-
-  // const keyMapper = (callback, options) => {
-  //   const eventType = (options && options.eventType) || 'keydown'
-  //   const keystrokeDelay = (options && options.keystrokeDelay) || 800
-
-  //   let state = {
-  //     buffer: [],
-  //     lastKeyTime: Date.now(),
-  //   }
-
-  //   document.addEventListener(eventType, (event) => {
-  //     const key = event.key.toLowerCase()
-  //     const currentTime = Date.now()
-  //     let buffer = []
-
-  //     if (currentTime - state.lastKeyTime > keystrokeDelay) {
-  //       buffer = [key]
-  //     } else {
-  //       buffer = [...state.buffer, key]
-  //     }
-
-  //     state = { buffer: buffer, lastKeyTime: currentTime }
-
-  //     callback(buffer)
-  //   })
-  // }
-
-  // const handleShortcuts = (keys = []) => {
-  //   console.log(keys)
-  //   if (keys.includes('meta') && keys.includes('b')) {
-  //     boldButtonHanlder()
-  //     return
-  //   }
-  //   if (keys.includes('meta') && keys.includes('i')) {
-  //     italicButtonHanlder()
-  //     return
-  //   }
-  //   if (keys.includes('meta') && keys.includes('shift') && keys.includes('1')) {
-  //     header1ButtonHanlder()
-  //     return
-  //   }
-  //   if (keys.includes('meta') && keys.includes('shift') && keys.includes('2')) {
-  //     header2ButtonHanlder()
-  //     return
-  //   }
-  // }
-
-  // keyMapper(handleShortcuts)
 
   header1Button.onclick = header1ButtonHanlder
   header2Button.onclick = header2ButtonHanlder
