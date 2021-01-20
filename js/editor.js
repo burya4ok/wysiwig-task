@@ -10,8 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const header1ClassName = 'header1-text'
   const header2ClassName = 'header2-text'
-  const boldClassName = 'header2-text'
-  const italicClassName = 'header2-text'
+  const boldClassName = 'bold-text'
+  const italicClassName = 'italic-text'
 
   const cssRulesForHeaders = Array.from(document.styleSheets)
     .reduce((rules, styleSheet) => rules.concat(Array.from(styleSheet.cssRules)), [])
