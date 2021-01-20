@@ -142,17 +142,26 @@ const execCommandWithAction = async (selection, action, containers = 'div') => {
     !isContainer(containers, container) &&
     (container.className.includes(action.className) || action.isHeader)
   ) {
-    await updateSelection(container, action, containers)
+    await updateSelection(container, action)
 
     return
   }
 
-  await replaceSelection(container, action, selection, containers)
+  await replaceSelection(container, action, selection)
 }
 
 const updateSelection = async (container, action) => {
-  if (action.isHeader && !container.className.includes(action.className)) {
-    container.className = action.className
+  if (action.isHeader) {
+    if (!container.className.includes(action.className)) {
+      if (container.tagName.toLowerCase() === 'span') {
+        extendAndReplaceElement(container, action)
+      } else {
+        container.className = action.className
+      }
+    } else {
+      container.className = container.className.replace(action.className, '')
+      extendAndReplaceElement(container, { className: '' })
+    }
   } else if (container.className.includes(action.className)) {
     container.className = container.className.replace(action.className, '')
   } else {
@@ -162,20 +171,20 @@ const updateSelection = async (container, action) => {
   await cleanChildren(action, container)
 }
 
-const replaceSelection = async (container, action, selection, containers) => {
+const replaceSelection = async (container, action, selection) => {
   const range = selection.getRangeAt(0)
 
   if (
     range.commonAncestorContainer &&
     ['span', 'h1', 'h2'].some((listType) => listType === range.commonAncestorContainer.nodeName.toLowerCase())
   ) {
-    await updateSelection(range.commonAncestorContainer, action, containers)
+    await updateSelection(range.commonAncestorContainer, action)
     return
   }
 
   const fragment = range.extractContents()
 
-  const el = await createElement(container, action, containers)
+  const el = createElement(action)
   el.appendChild(fragment)
 
   await cleanChildren(action, el)
@@ -217,7 +226,19 @@ const cleanChildren = async (action, el) => {
   await Promise.all(cleanChildrenChildren)
 }
 
-const createElement = async (container, action) => {
+const extendAndReplaceElement = (element, action) => {
+  const selection = document.getSelection()
+  const newElement = createElement(action)
+
+  newElement.className += ` ${element.className}`
+  newElement.innerHTML = element.innerHTML
+
+  element.replaceWith(newElement)
+
+  selection.selectAllChildren(newElement)
+}
+
+const createElement = (action) => {
   let element = 'span'
 
   switch (action.className) {
