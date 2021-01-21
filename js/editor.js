@@ -13,9 +13,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const boldClassName = 'bold-text'
   const italicClassName = 'italic-text'
 
-  const cssRulesForHeaders = Array.from(document.styleSheets)
+  const CSSRules = Array.from(document.styleSheets)
     .reduce((rules, styleSheet) => rules.concat(Array.from(styleSheet.cssRules)), [])
-    .filter((rule) => rule.selectorText.includes(header1ClassName) || rule.selectorText.includes(header2ClassName))
+    .filter((rule) =>
+      [header1ClassName, header2ClassName, boldClassName, italicClassName].some((className) =>
+        rule.selectorText.includes(className),
+      ),
+    )
 
   const copyHandler = (isCut = false) => (event) => {
     const selection = document.getSelection()
@@ -52,18 +56,21 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   const convertStylesToInline = (node, className) => {
-    const cssRule = cssRulesForHeaders.find((r) => r.selectorText.includes(className))
-    if (cssRule) {
-      Array.from(cssRule.style).forEach((styleName) => {
-        let value = cssRule.style[styleName]
+    const classNamesList = className.split(' ')
+    classNamesList.forEach((name) => {
+      const cssRule = CSSRules.find((r) => r.selectorText.includes(name))
+      if (cssRule) {
+        Array.from(cssRule.style).forEach((styleName) => {
+          let value = cssRule.style[styleName]
 
-        if (value.includes('rem')) {
-          const relativeValue = parseFloat(value)
-          value = relativeValue * defaultFontSize + 'px'
-        }
-        node.style[styleName] = value
-      })
-    }
+          if (value.includes('rem')) {
+            const relativeValue = parseFloat(value)
+            value = relativeValue * defaultFontSize + 'px'
+          }
+          node.style[styleName] = value
+        })
+      }
+    })
   }
 
   editArea.addEventListener('copy', copyHandler())
