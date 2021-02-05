@@ -1,6 +1,16 @@
-document.addEventListener('DOMContentLoaded', () => {
-  const defaultFontSize = +window.getComputedStyle(document.documentElement).fontSize.replace('px', '')
+const STYLES_KEYS = [
+  'font-style',
+  'font-variant',
+  'font-weight',
+  'font-stretch',
+  'font-size',
+  'line-height',
+  'font-family',
+  'color',
+  'background-color',
+]
 
+document.addEventListener('DOMContentLoaded', () => {
   const editArea = document.getElementById('edit-area')
 
   const header1Button = document.getElementById('head-1')
@@ -13,40 +23,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const boldClassName = 'bold-text'
   const italicClassName = 'italic-text'
 
-  const CSSRules = Array.from(document.styleSheets)
-    .reduce((rules, styleSheet) => rules.concat(Array.from(styleSheet.cssRules)), [])
-    .filter((rule) =>
-      [header1ClassName, header2ClassName, boldClassName, italicClassName].some((className) =>
-        rule.selectorText.includes(className),
-      ),
-    )
-
   const copyHandler = (isCut = false) => (event) => {
-    const selection = document.getSelection()
-    const selectionContent = selection.getRangeAt(0).cloneContents()
+    const selection = getSelection()
+    const styledText = getStyledTextOfSelection(editArea, selection)
 
-    const convertNodeStyles = (node) => {
-      if (node.nodeType !== 3) {
-        if (node.className) {
-          convertStylesToInline(node, node.className.toLowerCase())
-        }
-
-        if (node.childNodes) {
-          for (let i = 0; i < node.childNodes.length; i++) {
-            convertNodeStyles(node.childNodes[i])
-          }
-        }
-      }
-      return node
-    }
-
-    const convertedChildren = Array.from(selectionContent.childNodes).map(convertNodeStyles)
-
-    const wrap = document.createElement('div')
-
-    wrap.append(...convertedChildren)
-
-    event.clipboardData.setData('text/html', wrap.innerHTML)
+    event.clipboardData.setData('text/html', styledText)
 
     if (isCut) {
       selection.deleteFromDocument()
@@ -55,48 +36,30 @@ document.addEventListener('DOMContentLoaded', () => {
     event.preventDefault()
   }
 
-  const convertStylesToInline = (node, className) => {
-    const classNamesList = className.split(' ')
-    classNamesList.forEach((name) => {
-      const cssRule = CSSRules.find((r) => r.selectorText.includes(name))
-      if (cssRule) {
-        Array.from(cssRule.style).forEach((styleName) => {
-          let value = cssRule.style[styleName]
-
-          if (value.includes('rem')) {
-            const relativeValue = parseFloat(value)
-            value = relativeValue * defaultFontSize + 'px'
-          }
-          node.style[styleName] = value
-        })
-      }
-    })
-  }
-
   editArea.addEventListener('copy', copyHandler())
   editArea.addEventListener('cut', copyHandler(true))
 
-  const header1ButtonHanlder = async () => {
+  const header1ButtonHanlder = () => {
     editArea.focus()
 
-    execCommandWithAction(await getSelection(), { className: header1ClassName, isHeader: true })
+    execCommandWithAction(getSelection(), { className: header1ClassName, isHeader: true })
   }
 
-  const header2ButtonHanlder = async () => {
+  const header2ButtonHanlder = () => {
     editArea.focus()
 
-    execCommandWithAction(await getSelection(), { className: header2ClassName, isHeader: true })
+    execCommandWithAction(getSelection(), { className: header2ClassName, isHeader: true })
   }
 
-  const boldButtonHanlder = async () => {
+  const boldButtonHanlder = () => {
     editArea.focus()
 
-    execCommandWithAction(await getSelection(), { className: boldClassName })
+    execCommandWithAction(getSelection(), { className: boldClassName })
   }
-  const italicButtonHanlder = async () => {
+  const italicButtonHanlder = () => {
     editArea.focus()
 
-    execCommandWithAction(await getSelection(), { className: italicClassName })
+    execCommandWithAction(getSelection(), { className: italicClassName })
   }
 
   header1Button.onclick = header1ButtonHanlder
@@ -105,20 +68,16 @@ document.addEventListener('DOMContentLoaded', () => {
   italicButton.onclick = italicButtonHanlder
 })
 
-const getSelection = async () => {
-  return new Promise((resolve) => {
-    let selectedSelection = null
+const isElementNode = (node) => {
+  return node.nodeType === Node.ELEMENT_NODE
+}
 
-    if (window && window.getSelection) {
-      selectedSelection = window.getSelection()
-    } else if (document && document.getSelection) {
-      selectedSelection = document.getSelection()
-    } else if (document && document.selection) {
-      selectedSelection = document.selection.createRange().text
-    }
+const isTextNode = (node) => {
+  return node.nodeType === Node.TEXT_NODE
+}
 
-    resolve(selectedSelection)
-  })
+const isCommentNode = (node) => {
+  return node.nodeType === Node.TEXT_NODE
 }
 
 const isContainer = (containers, element) => {
@@ -126,7 +85,92 @@ const isContainer = (containers, element) => {
   return element && element.nodeName && containerTypes.includes(element.nodeName.toLowerCase())
 }
 
-const execCommandWithAction = async (selection, action, containers = 'div') => {
+const getStyledTextOfSelection = (element, selection) => {
+  const nodeList = []
+
+  element.childNodes.forEach((childNode) => {
+    if (!selection.containsNode(childNode, true)) return
+
+    const childNodeClone = childNode.cloneNode(false)
+
+    applyComputedStyle(childNode, childNodeClone)
+    cloneSelectedNode(selection, childNode, childNodeClone)
+
+    nodeList.push(childNodeClone)
+  })
+
+  let text = ''
+
+  nodeList.forEach((childElement) => {
+    text += childElement.outerHTML || ''
+  })
+
+  return text
+}
+
+const cloneSelectedNode = (selection, node, nodeClone) => {
+  if (!selection.containsNode(node, true)) return
+
+  const range = selection.getRangeAt(0)
+
+  let childNode = node.firstChild
+
+  while (childNode) {
+    if (!selection.containsNode(childNode, true)) {
+      break
+    }
+
+    const childNodeClone = childNode.cloneNode(false)
+
+    applyComputedStyle(childNode, childNodeClone)
+
+    nodeClone.appendChild(childNodeClone)
+
+    if (isTextNode(childNode)) {
+      const isStartContainer = childNode === range.startContainer
+      const isEndContainer = childNode === range.endContainer
+      const currentTextContent = childNode.textContent || ''
+      const startOffset = isStartContainer ? range.startOffset : 0
+      const endOffset = isEndContainer ? range.endOffset : currentTextContent.length
+      childNodeClone.textContent = currentTextContent.slice(startOffset, endOffset)
+    }
+
+    if (isElementNode(childNode)) {
+      cloneSelectedNode(selection, childNode, childNodeClone)
+    }
+
+    childNode = childNode.nextSibling
+  }
+}
+
+const applyComputedStyle = (currentNode, cloneNode) => {
+  if (!isElementNode(currentNode) || !isElementNode(cloneNode)) return cloneNode
+
+  const computedStyle = window.getComputedStyle(currentNode)
+
+  STYLES_KEYS.forEach((key) => {
+    const value = computedStyle.getPropertyValue(key)
+    cloneNode.style.setProperty(key, value)
+  })
+
+  return cloneNode
+}
+
+const getSelection = () => {
+  let selectedSelection = null
+
+  if (window && window.getSelection) {
+    selectedSelection = window.getSelection()
+  } else if (document && document.getSelection) {
+    selectedSelection = document.getSelection()
+  } else if (document && document.selection) {
+    selectedSelection = document.selection.createRange().text
+  }
+
+  return selectedSelection
+}
+
+const execCommandWithAction = (selection, action, containers = 'div') => {
   if (!document || !selection) {
     return
   }
@@ -138,9 +182,7 @@ const execCommandWithAction = async (selection, action, containers = 'div') => {
   }
 
   const container =
-    anchorNode.nodeType !== Node.TEXT_NODE && anchorNode.nodeType !== Node.COMMENT_NODE
-      ? anchorNode
-      : anchorNode.parentElement
+    isTextNode(anchorNode.nodeType) && !isCommentNode(anchorNode.nodeType) ? anchorNode : anchorNode.parentElement
 
   const sameSelection = container && container.innerText === selection.toString()
 
@@ -149,15 +191,15 @@ const execCommandWithAction = async (selection, action, containers = 'div') => {
     !isContainer(containers, container) &&
     (container.className.includes(action.className) || action.isHeader)
   ) {
-    await updateSelection(container, action)
+    updateSelection(container, action)
 
     return
   }
 
-  await replaceSelection(container, action, selection)
+  replaceSelection(container, action, selection)
 }
 
-const updateSelection = async (container, action) => {
+const updateSelection = (container, action) => {
   if (action.isHeader) {
     if (!container.className.includes(action.className)) {
       if (container.tagName.toLowerCase() === 'span') {
@@ -175,17 +217,17 @@ const updateSelection = async (container, action) => {
     container.className += ` ${action.className}`
   }
 
-  await cleanChildren(action, container)
+  cleanChildren(action, container)
 }
 
-const replaceSelection = async (container, action, selection) => {
+const replaceSelection = (container, action, selection) => {
   const range = selection.getRangeAt(0)
 
   if (
     range.commonAncestorContainer &&
     ['span', 'h1', 'h2'].some((listType) => listType === range.commonAncestorContainer.nodeName.toLowerCase())
   ) {
-    await updateSelection(range.commonAncestorContainer, action)
+    updateSelection(range.commonAncestorContainer, action)
     return
   }
 
@@ -194,19 +236,18 @@ const replaceSelection = async (container, action, selection) => {
   const el = createElement(action)
   el.appendChild(fragment)
 
-  await cleanChildren(action, el)
-  await flattenChildren(action, el)
+  cleanChildren(action, el)
+  flattenChildren(action, el)
 
   range.insertNode(el)
   selection.selectAllChildren(el)
 }
 
-const cleanChildren = async (action, el) => {
+const cleanChildren = (action, el) => {
   if (!el.hasChildNodes()) {
     return
   }
 
-  // Clean direct (> *) children with same style
   const children = Array.from(el.children).filter((element) => {
     return element.className.includes(action.className)
   })
@@ -221,7 +262,6 @@ const cleanChildren = async (action, el) => {
     })
   }
 
-  // Direct children (> *) may have children (*) which need to be cleaned too
   const cleanChildrenChildren = Array.from(el.children).map((element) => {
     return cleanChildren(action, element)
   })
@@ -230,11 +270,11 @@ const cleanChildren = async (action, el) => {
     return
   }
 
-  await Promise.all(cleanChildrenChildren)
+  cleanChildrenChildren
 }
 
 const extendAndReplaceElement = (element, action) => {
-  const selection = document.getSelection()
+  const selection = getSelection()
   const newElement = createElement(action)
 
   newElement.className += ` ${element.className}`
@@ -264,13 +304,11 @@ const createElement = (action) => {
   return el
 }
 
-// We try to not keep <el/> in the tree if we can use text
-const flattenChildren = async (action, el) => {
+const flattenChildren = (action, el) => {
   if (!el.hasChildNodes()) {
     return
   }
 
-  // Flatten direct (> *) children with no style
   const children = Array.from(el.children).filter((element) => {
     const className = element.getAttribute('className') || element.className
     return !className || className === ''
@@ -278,7 +316,6 @@ const flattenChildren = async (action, el) => {
 
   if (children && children.length > 0) {
     children.forEach((element) => {
-      // Can only be flattened if there is no other style applied to a children, like a color to part of a text with a background
       const styledChildren = element.querySelectorAll(action.className)
       if (!styledChildren || styledChildren.length === 0) {
         const text = document.createTextNode(element.textContent)
@@ -289,7 +326,6 @@ const flattenChildren = async (action, el) => {
     return
   }
 
-  // Direct children (> *) may have children (*) which need to be flattened too
   const flattenChildrenChildren = Array.from(el.children).map((element) => {
     return flattenChildren(action, element)
   })
@@ -298,5 +334,5 @@ const flattenChildren = async (action, el) => {
     return
   }
 
-  await Promise.all(flattenChildrenChildren)
+  return flattenChildrenChildren
 }
