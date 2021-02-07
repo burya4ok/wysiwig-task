@@ -102,7 +102,7 @@ const getStyledTextOfSelection = (element, selection) => {
   let text = ''
 
   nodeList.forEach((childElement) => {
-    text += childElement.outerHTML || ''
+    text += childElement.outerHTML || childElement.textContent || ''
   })
 
   return text
