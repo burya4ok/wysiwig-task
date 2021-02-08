@@ -10,6 +10,8 @@ const STYLES_KEYS = [
   'background-color',
 ]
 
+const NEW_LINE_NODE = 'br'
+
 document.addEventListener('DOMContentLoaded', () => {
   const editArea = document.getElementById('edit-area')
 
@@ -36,8 +38,16 @@ document.addEventListener('DOMContentLoaded', () => {
     event.preventDefault()
   }
 
+  const hanldleNewLine = (event) => {
+    if (event.key === 'Enter') {
+      document.execCommand('insertLineBreak')
+      event.preventDefault()
+    }
+  }
+
   editArea.addEventListener('copy', copyHandler())
   editArea.addEventListener('cut', copyHandler(true))
+  editArea.addEventListener('keydown', hanldleNewLine)
 
   const header1ButtonHanlder = () => {
     editArea.focus()
@@ -318,8 +328,10 @@ const flattenChildren = (action, el) => {
     children.forEach((element) => {
       const styledChildren = element.querySelectorAll(action.className)
       if (!styledChildren || styledChildren.length === 0) {
-        const text = document.createTextNode(element.textContent)
-        element.parentElement.replaceChild(text, element)
+        if (element.nodeName.toLowerCase() !== NEW_LINE_NODE) {
+          const text = document.createTextNode(element.textContent || element.outerHTML)
+          element.parentElement.replaceChild(text, element)
+        }
       }
     })
 
